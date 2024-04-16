@@ -1,3 +1,4 @@
+
 /** ********************************************************************************************
  *                                                                                             *
  * Please read the following tutorial before implementing tasks:                               *
@@ -17,15 +18,13 @@
  * 0    => promise that will be fulfilled
  * 1    => promise that will be fulfilled
  */
-function getPromise(number) {
-  const myPromise = new Promise((resolve, reject) => {
-    if (number < 0) {
-      reject(new Error('Number is negative'));
-    } else {
+function getPromise( number ) {  
+  return new Promise(function(resolve, reject) {
+    if(number >= 0)
       resolve(number);
-    }
+    else
+      reject(new Error(""));
   });
-  return myPromise;
 }
 
 /**
@@ -40,16 +39,11 @@ function getPromise(number) {
  * Promise.resolve('success') => promise that will be fulfilled with 'success' value
  * Promise.reject('fail')     => promise that will be fulfilled with 'fail' value
  */
-function getPromiseResult(source) {
-  return new Promise((resolve) => {
-    source
-      .then(() => {
-        resolve('success');
-      })
-      .catch(() => {
-        resolve('fail');
-      });
-  });
+function getPromiseResult( source ) {  
+  return source.then(
+    result => "success",
+    error => "fail"
+  );
 }
 
 /**
@@ -65,8 +59,24 @@ function getPromiseResult(source) {
  * [Promise.resolve(1), Promise.reject(2), Promise.resolve(3)]  => Promise fulfilled with 1
  * [Promise.reject(1), Promise.reject(2), Promise.reject(3)]    => Promise rejected
  */
-function getFirstResolvedPromiseResult(promises) {
-  return Promise.any(promises);
+function getFirstResolvedPromiseResult( promises ) {  
+  const any = (promises) => {
+    return new Promise((resolve, reject) => {
+      const result = [];
+      let count = 0;
+
+      const handleResult = (value, index, status) => {
+        result[index] = { status, value };
+        count++;
+        if (count === promises.length) reject(result);
+      };
+
+      for (let i = 0; i < promises.length; i++) {
+        promises[i].then(resolve, (err) => handleResult(err, i, "rejected"));
+      }
+    });
+  };
+  return any(promises);
 }
 
 /**
@@ -88,7 +98,7 @@ function getFirstResolvedPromiseResult(promises) {
  * [promise3, promise6, promise2] => Promise rejected with 2
  * [promise3, promise4, promise6] => Promise rejected with 6
  */
-function getFirstPromiseResult(promises) {
+function getFirstPromiseResult( promises ) {  
   return Promise.race(promises);
 }
 
@@ -103,7 +113,7 @@ function getFirstPromiseResult(promises) {
  * [Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)] => Promise fulfilled with [1, 2, 3]
  * [Promise.resolve(1), Promise.reject(2), Promise.resolve(3)] => Promise rejected with 2
  */
-function getAllOrNothing(promises) {
+function getAllOrNothing( promises ) {  
   return Promise.all(promises);
 }
 
@@ -119,11 +129,15 @@ function getAllOrNothing(promises) {
  * [Promise.resolve(1), Promise.resolve(2), Promise.resolve(3)] => Promise fulfilled with [1, 2, 3]
  * [Promise.resolve(1), Promise.reject(2), Promise.resolve(3)]  => Promise fulfilled with [1, null, 3]
  */
-async function getAllResult(promises) {
-  const results = await Promise.allSettled(promises);
-  return results.map((result) =>
-    result.status === 'fulfilled' ? result.value : null
-  );
+function getAllResult( promises ) {    
+  return Promise.allSettled(promises).then(results => {
+    return results.map((result) => {
+      if(result.status === "fulfilled")
+        return result.value;
+      else if(result.status === "rejected")
+        return null;
+    });      
+  });
 }
 
 /**
@@ -144,12 +158,21 @@ async function getAllResult(promises) {
  * [promise1, promise4, promise3] => Promise.resolved('104030')
  * [promise1, promise4, promise3, promise2] => Promise.resolved('10403020')
  */
-function queuPromises(promises) {
-  return promises.reduce(async (previousPromise, nextPromise) => {
-    const result = await previousPromise;
-    const nextResult = await nextPromise;
-    return result + nextResult;
-  }, Promise.resolve(''));
+function queuPromises( promises ) {  
+  let str = "";
+  let ind = 0;
+  return add(promises[0]);
+  function add(p) {
+    ++ind;
+    p = p.then(result => {
+      str += result;      
+      return (ind in promises) ? promises[ind] : str;
+    });    
+    if(ind in promises)
+      return add(p);
+    else
+      return p;
+  }  
 }
 
 module.exports = {
